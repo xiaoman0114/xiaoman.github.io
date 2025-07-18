@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>猜数字游戏</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#EC4899',
+                        neutral: '#1F2937',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .transition-custom {
+                transition: all 0.3s ease;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 to-purple-50 min-h-screen font-sans text-neutral">
+    <div class="container mx-auto px-4 py-8 max-w-md">
+        <!-- 游戏标题 -->
+        <div class="text-center mb-8 mt-4">
+            <h1 class="text-[clamp(1.8rem,5vw,2.5rem)] font-bold text-primary text-shadow">猜数字游戏</h1>
+            <p class="text-gray-600 mt-2">三次内猜中一个1-100之间的数！</p>
+        </div>
+        
+        <!-- 游戏卡片 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 transform hover:shadow-xl transition-custom">
+            <!-- 游戏说明 -->
+            <div id="instructions" class="mb-6 text-center">
+                <p class="text-gray-700">我已经想好了一个1到100之间的数字</p>
+                <p class="text-gray-700 mt-2">看看你需要多少次才能猜中它！</p>
+            </div>
+            
+            <!-- 消息区域 -->
+            <div id="message" class="mb-6 p-4 rounded-lg bg-blue-50 text-center min-h-[60px] flex items-center justify-center">
+                <p class="text-blue-700">准备好了吗？开始猜吧！</p>
+            </div>
+            
+            <!-- 输入区域 -->
+            <div class="mb-4">
+                <label for="guessInput" class="block text-gray-700 mb-2">请输入你猜的数字：</label>
+                <div class="flex">
+                    <input 
+                        type="number" 
+                        id="guessInput" 
+                        min="1" 
+                        max="100" 
+                        class="flex-1 px-4 py-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        placeholder="1-100之间的数字"
+                    >
+                    <button 
+                        id="guessButton" 
+                        class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-r-lg font-medium transition-custom flex items-center justify-center"
+                    >
+                        <i class="fa fa-check mr-2"></i> 猜
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 猜测历史 -->
+            <div class="mb-4">
+                <h3 class="text-gray-700 font-medium mb-2">猜测历史：</h3>
+                <div id="history" class="flex flex-wrap gap-2 min-h-[40px]">
+                    <!-- 历史记录会在这里显示 -->
+                </div>
+            </div>
+            
+            <!-- 重置按钮 -->
+            <button 
+                id="resetButton" 
+                class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-medium transition-custom mt-4 hidden"
+            >
+                <i class="fa fa-refresh mr-2"></i> 再来一局
+            </button>
+        </div>
+        
+        <!-- 页脚 -->
+        <div class="text-center text-gray-500 text-sm">
+            <p>适合手机和平板使用的猜数字游戏</p>
+        </div>
+    </div>
+
+    <script>
+        // 游戏核心逻辑
+        let rand = Math.floor(Math.random() * 100) + 1; // 生成1-100的随机数
+        let count = 1;
+        const guessInput = document.getElementById('guessInput');
+        const guessButton = document.getElementById('guessButton');
+        const messageElement = document.getElementById('message');
+        const historyElement = document.getElementById('history');
+        const resetButton = document.getElementById('resetButton');
+        const instructions = document.getElementById('instructions');
+
+        // 猜数字函数
+        function guessNumber() {
+            const number = parseInt(guessInput.value);
+            
+            // 验证输入
+            if (isNaN(number) || number < 1 || number > 100) {
+                showMessage('请输入1到100之间的有效数字！', 'red');
+                return;
+            }
+            
+            // 记录猜测历史
+            addToHistory(number);
+            
+            // 清空输入框
+            guessInput.value = '';
+            guessInput.focus();
+            
+            // 判断猜测结果
+            if (number > rand) {
+                let message;
+                if (Math.abs(number - rand) > 10) {
+                    message = '猜大了，而且比它大好多！';
+                } else if (Math.abs(number - rand) > 5) {
+                    message = '有点大但差的不是很多呦，再试试吧';
+                } else {
+                    message = '大那么一些些~差点就让你猜中了~~';
+                }
+                showMessage(message, 'orange');
+                count++;
+            } else if (number < rand) {
+                let message;
+                if (Math.abs(number - rand) > 10) {
+                    message = '猜小了，而且比它小好多！';
+                } else if (Math.abs(number - rand) > 5) {
+                    message = '有点小但差的不是很多呦，再试试吧';
+                } else {
+                    message = '只小那么一些些~差点就让你猜中了~~';
+                }
+                showMessage(message, 'blue');
+                count++;
+            } else {
+                // 猜对了
+                showMessage(`嘿嘿猜对啦！答案就是 ${rand}`, 'green');
+                endGame();
+            }
+        }
+        
+        // 显示消息
+        function showMessage(text, color) {
+            let bgColor, textColor;
+            
+            switch(color) {
+                case 'red':
+                    bgColor = 'bg-red-50';
+                    textColor = 'text-red-700';
+                    break;
+                case 'green':
+                    bgColor = 'bg-green-50';
+                    textColor = 'text-green-700';
+                    break;
+                case 'orange':
+                    bgColor = 'bg-orange-50';
+                    textColor = 'text-orange-700';
+                    break;
+                default:
+                    bgColor = 'bg-blue-50';
+                    textColor = 'text-blue-700';
+            }
+            
+            messageElement.className = `mb-6 p-4 rounded-lg ${bgColor} text-center min-h-[60px] flex items-center justify-center`;
+            messageElement.innerHTML = `<p class="${textColor}">${text}</p>`;
+        }
+        
+        // 添加到历史记录
+        function addToHistory(number) {
+            const historyItem = document.createElement('span');
+            historyItem.className = 'bg-gray-100 px-3 py-1 rounded-full text-sm';
+            historyItem.textContent = number;
+            historyElement.appendChild(historyItem);
+        }
+        
+        // 结束游戏
+        function endGame() {
+            // 禁用输入和猜测按钮
+            guessInput.disabled = true;
+            guessButton.disabled = true;
+            guessButton.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            // 显示结果
+            let resultMessage;
+            if (count <= 3) {
+                resultMessage = `NB666，${count}次就猜中了！`;
+            } else if (count < 10) {
+                resultMessage = `一般，猜了${count}次，回去再练练吧。`;
+            } else {
+                resultMessage = `哇，好厉害呀~~${count}次才猜中，回家吧孩子，回家吧~~`;
+            }
+            
+            // 显示结果信息
+            const resultElement = document.createElement('div');
+            resultElement.className = 'mt-4 p-3 rounded-lg bg-purple-50 text-purple-700 text-center font-medium';
+            resultElement.textContent = `你一共猜了${count}次！${resultMessage}`;
+            instructions.parentNode.insertBefore(resultElement, instructions);
+            
+            // 显示重置按钮
+            resetButton.classList.remove('hidden');
+        }
+        
+        // 重置游戏
+        function resetGame() {
+            // 重置游戏状态
+            rand = Math.floor(Math.random() * 100) + 1;
+            count = 1;
+            
+            // 清空历史记录
+            historyElement.innerHTML = '';
+            
+            // 重置消息
+            showMessage('准备好了吗？开始猜吧！', 'blue');
+            
+            // 启用输入和按钮
+            guessInput.disabled = false;
+            guessButton.disabled = false;
+            guessButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            // 隐藏重置按钮
+            resetButton.classList.add('hidden');
+            
+            // 移除结果信息
+            const resultElement = document.querySelector('.bg-purple-50');
+            if (resultElement) {
+                resultElement.remove();
+            }
+            
+            // 聚焦输入框
+            guessInput.focus();
+        }
+        
+        // 事件监听
+        guessButton.addEventListener('click', guessNumber);
+        
+        // 按回车键也可以猜数字
+        guessInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                guessNumber();
+            }
+        });
+        
+        resetButton.addEventListener('click', resetGame);
+        
+        // 初始聚焦输入框
+        guessInput.focus();
+    </script>
+</body>
+</html>
